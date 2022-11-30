@@ -1,11 +1,13 @@
-import { PrismaClient } from '@prisma/client';
-import { Response } from 'express';
+import {PrismaClient} from '@prisma/client';
+import {Response} from 'express';
 import app from './app';
 import redisClient from './utils/connectRedis';
 
 const prisma = new PrismaClient();
 const PORT = process.env.PORT;
-
+/**
+ * main
+ */
 async function bootstrap() {
   app.get('/', async (_, res: Response) => {
     const message = await redisClient.get('test');
@@ -19,9 +21,9 @@ async function bootstrap() {
 }
 
 bootstrap()
-  .catch((err) => {
-    throw err;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+    .catch((err) => {
+      throw err;
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });

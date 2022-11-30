@@ -1,4 +1,4 @@
-import { createClient } from 'redis';
+import {createClient} from 'redis';
 
 const redisUrl = 'redis://localhost:6379';
 
