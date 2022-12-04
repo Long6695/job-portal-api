@@ -3,4 +3,8 @@
         "source.fixAll.tslint": true,
         "source.fixAll.eslint": true
     },
+    "cSpell.words": [
+        "middlewares",
+        "signin"
+    ],
 }
