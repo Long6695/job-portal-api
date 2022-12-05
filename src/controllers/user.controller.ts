@@ -1,9 +1,7 @@
-import { User } from '@prisma/client';
 import { NextFunction, Request, Response } from 'express';
 import { omit } from 'lodash';
 import passport from 'passport';
-import { excludedFields, findUniqueAndUpdateUser, findUniqueUser } from 'services/user.services';
-import AppError from 'utils/AppError';
+import { excludedFields, findUniqueAndUpdateUser } from 'services/user.services';
 
 export class UserControllers {
   constructor() {

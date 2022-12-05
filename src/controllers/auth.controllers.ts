@@ -1,10 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import { omit } from 'lodash';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import AppError from 'utils/AppError';
 import { IRegisterUserSchemas, ISignInUserSchemas } from 'schemas/auth.schemas';
-import { createUser, excludedFields, findUniqueUser } from 'services/user.services';
+import { excludedFields, findUniqueUser } from 'services/user.services';
 import { signJWT, verifyJWT } from 'utils/jwt';
 import passport from 'passport';
 import { User } from '@prisma/client';
