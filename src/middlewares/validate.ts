@@ -1,15 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
-import Joi from 'joi';
-import AppError from 'utils/AppError';
+import { AnyZodObject, ZodError } from 'zod';
 
-export const validate = (schema: Joi.ObjectSchema) => (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { error } = schema.validate(req.body);
-    if (error) {
-      return next(new AppError(400, error.details[0].message));
+export const validate =
+  (schema: AnyZodObject) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      schema.parse({
+        params: req.params,
+        query: req.query,
+        body: req.body,
+      });
+
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          status: 'fail',
+          errors: error.errors,
+        });
+      }
+      next(error);
     }
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
+  };

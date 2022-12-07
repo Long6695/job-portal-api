@@ -1,0 +1,9 @@
+{
+  "nodeEnv": "NODE_ENV",
+  "port": "PORT",
+  "frontendBaseUrl": "FRONTEND_BASE_URL",
+  "accessTokenPrivateKeyPath": "ACCESS_TOKEN_PRIVATE_KEY_PATH",
+  "accessTokenPublicKeyPath": "ACCESS_TOKEN_PUBLIC_KEY_PATH",
+  "refreshTokenPrivateKeyPath": "REFRESH_TOKEN_PRIVATE_KEY_PATH",
+  "refreshTokenPublicKeyPath": "REFRESH_TOKEN_PUBLIC_KEY_PATH"
+}

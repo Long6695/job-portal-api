@@ -3,16 +3,19 @@ import passportLocal from 'passport-local';
 import { createUser, findUniqueUser } from 'services/user.services';
 import bcrypt from 'bcryptjs';
 import passportJwt from 'passport-jwt';
+import { accessTokenPublicKey } from 'utils/jwt';
 
 const jwtStrategy = passportJwt.Strategy;
 const extractJwt = passportJwt.ExtractJwt;
 const localStrategy = passportLocal.Strategy;
 
 passport.use(
+  'jwt',
   new jwtStrategy(
     {
-      secretOrKey: process.env.ACCESS_TOKEN,
+      secretOrKey: accessTokenPublicKey,
       jwtFromRequest: extractJwt.fromAuthHeaderAsBearerToken(),
+      algorithms: ["RS256"]
     },
     async (payload, done) => {
       try {
@@ -60,9 +63,9 @@ passport.use(
         if (!user) {
           return done(null, false, { message: 'Invalid email or password.' });
         }
-        // if (!user.verify) {
-        //   return done(null, false, { message: 'Your account is not verified.' });
-        // }
+        if (!user.verify) {
+          return done(null, false, { message: 'Your account is not verified.' });
+        }
 
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) {

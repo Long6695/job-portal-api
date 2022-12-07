@@ -106,3 +106,6 @@ dist
 .tern-port
 
 api.http
+
+# Application's JWT Pem and Pub Keys
+keys/*

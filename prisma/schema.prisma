@@ -15,10 +15,14 @@ model User {
   email     String    @unique
   password  String
   verify    Boolean   @default(false)
+  verificationCode String? @db.Text
   role      Role      @default(USER)
   profile   Profile?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@unique([email, verificationCode])
+  @@index([email, verificationCode])
 }
 
 model Profile {

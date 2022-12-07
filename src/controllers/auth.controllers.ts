@@ -1,22 +1,42 @@
-import { NextFunction, Request, Response } from 'express';
+import { CookieOptions, NextFunction, Request, Response } from 'express';
 import { omit } from 'lodash';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import AppError from 'utils/AppError';
-import { IRegisterUserSchemas, ISignInUserSchemas } from 'schemas/auth.schemas';
 import { excludedFields, findUniqueUser } from 'services/user.services';
-import { signJWT, verifyJWT } from 'utils/jwt';
 import passport from 'passport';
 import { User } from '@prisma/client';
+import { CreateUserInput, LoginUserInput } from 'schemas/user.schemas';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from 'utils/jwt';
+import config from 'config';
 
 export class AuthController {
   constructor() {
     this.registerUserHandler = this.registerUserHandler.bind(this);
     this.signinUserHandler = this.signinUserHandler.bind(this);
     this.logoutUserHandler = this.logoutUserHandler.bind(this);
+    this.refreshAccessTokenHandler = this.refreshAccessTokenHandler.bind(this);
+  }
+
+  cookiesOptions(expiresIn: number = config.get<number>('accessTokenExpiresIn')): CookieOptions {
+    const baseOptions: CookieOptions = {
+      expires: new Date(Date.now() + expiresIn * 60 * 1000),
+      maxAge: expiresIn * 60 * 1000,
+      httpOnly: true,
+      sameSite: 'lax',
+      domain: config.get<string>('frontendBaseUrl'),
+      secure: false,
+    };
+    if (expiresIn !== config.get<number>('accessTokenExpiresIn')) {
+      return {
+        ...baseOptions,
+        path: '/refresh',
+      };
+    }
+    return baseOptions;
   }
 
   async registerUserHandler(
-    req: Request<Record<string, unknown>, Record<string, unknown>, IRegisterUserSchemas>,
+    req: Request<Record<string, unknown>, Record<string, unknown>, CreateUserInput>,
     res: Response,
     next: NextFunction,
   ) {
@@ -43,47 +63,42 @@ export class AuthController {
   }
 
   async signinUserHandler(
-    req: Request<Record<string, unknown>, Record<string, unknown>, ISignInUserSchemas>,
+    req: Request<Record<string, unknown>, Record<string, unknown>, LoginUserInput>,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      if (req.user) {
-        const { email } = req.user as User;
-        req.login(req.user, { session: false }, async (err) => {
+      passport.authenticate('login', async (err, user, info) => {
+        if (err || !user) {
+          return next(new AppError(401, info.message));
+        }
+        const { email } = user;
+        req.login(user, { session: false }, async (err) => {
           if (err) return next(err);
 
-          const access_token = signJWT({ email }, 'ACCESS_TOKEN', {
-            expiresIn: '15m',
-          });
+          const access_token = signAccessToken(
+            { email },
+            {
+              expiresIn: `${config.get<number>('accessTokenExpiresIn')}m`,
+            },
+          );
 
-          const refresh_token = signJWT({ email }, 'REFRESH_TOKEN', {
-            expiresIn: '60m',
-          });
+          const refresh_token = signRefreshToken(
+            { email },
+            {
+              expiresIn: `${config.get<number>('refreshTokenExpiresIn')}m`,
+            },
+          );
 
-          res.cookie('access_token', access_token, {
-            expires: new Date(Date.now() + 15 * 60 * 1000),
-            maxAge: 15 * 60 * 1000,
-            httpOnly: true,
-            sameSite: 'lax',
-            domain: process.env.FRONTEND_BASE_URL,
-            secure: false,
-          });
-          res.cookie('refresh_token', refresh_token, {
-            expires: new Date(Date.now() + 60 * 60 * 1000),
-            maxAge: 60 * 60 * 1000,
-            httpOnly: true,
-            domain: process.env.FRONTEND_BASE_URL,
-            path: '/refresh',
-            secure: false,
-          });
-
+          res.cookie('access_token', access_token, this.cookiesOptions(config.get<number>('accessTokenExpiresIn')));
+          res.cookie('refresh_token', refresh_token, this.cookiesOptions(config.get<number>('refreshTokenExpiresIn')));
+          res.setHeader('Authorization', access_token);
           res.status(200).json({
             status: 'success',
             message: 'Login successfully',
           });
         });
-      }
+      })(req, res, next);
     } catch (error) {
       next(new AppError(401, 'Login fail. Try again!'));
     }
@@ -101,7 +116,7 @@ export class AuthController {
       }
 
       // Validate refresh token
-      const decoded = verifyJWT(refresh_token, 'REFRESH_TOKEN') as { email: string };
+      const decoded = verifyRefreshToken(refresh_token) as { email: string };
 
       if (!decoded) {
         return next(new AppError(403, message));
@@ -115,37 +130,29 @@ export class AuthController {
       }
 
       // Sign new access token
-      const access_token = signJWT({ email: decoded.email }, 'ACCESS_TOKEN', {
-        expiresIn: `15m`,
-      });
+      const access_token = signAccessToken(
+        { email: decoded.email },
+        {
+          expiresIn: `${config.get<number>('accessTokenExpiresIn')}m`,
+        },
+      );
 
-      const new_refresh_token = signJWT({ email: decoded.email }, 'ACCESS_TOKEN', {
-        expiresIn: `60m`,
-      });
+      const new_refresh_token = signRefreshToken(
+        { email: decoded.email },
+        {
+          expiresIn: `${config.get<number>('refreshTokenExpiresIn')}m`,
+        },
+      );
 
       // 4. Add Cookies
-      res.cookie('access_token', access_token, {
-        expires: new Date(Date.now() + 15 * 60 * 1000),
-        maxAge: 15 * 60 * 1000,
-        httpOnly: true,
-        sameSite: 'lax',
-        domain: process.env.FRONTEND_BASE_URL,
-        secure: false,
-      });
+      res.cookie('access_token', access_token, this.cookiesOptions(config.get<number>('accessTokenExpiresIn')));
 
-      res.cookie('refresh_token', new_refresh_token, {
-        expires: new Date(Date.now() + 60 * 60 * 1000),
-        maxAge: 60 * 60 * 1000,
-        httpOnly: true,
-        domain: process.env.FRONTEND_BASE_URL,
-        path: '/refresh',
-        secure: false,
-      });
+      res.cookie('refresh_token', new_refresh_token, this.cookiesOptions(config.get<number>('refreshTokenExpiresIn')));
 
       // 5. Send response
       res.status(200).json({
         status: 'success',
-        message: 'refresh token successfully',
+        message: 'Refresh token successfully',
       });
     } catch (err) {
       next(err);

@@ -1,22 +1,36 @@
+import config from 'config';
 import jwt, { SignOptions } from 'jsonwebtoken';
-export const signJWT = (
-  payload: Record<string, unknown>,
-  keyName: 'ACCESS_TOKEN' | 'REFRESH_TOKEN',
-  options?: SignOptions,
-) => {
-  const key = process.env[keyName] || process.env['ACCESS_TOKEN'];
-  if (!key) return;
-  return jwt.sign(payload, key, {
+import fs from 'fs';
+
+export const accessTokenPrivateKey = fs.readFileSync(config.get<string>('accessTokenPrivateKeyPath'), { encoding: 'utf8' });
+export const refreshTokenPrivateKey = fs.readFileSync(config.get<string>('refreshTokenPrivateKeyPath'), { encoding: 'utf8' });
+export const accessTokenPublicKey = fs.readFileSync(config.get<string>('accessTokenPublicKeyPath'), { encoding: 'utf8' });
+export const refreshTokenPublicKey = fs.readFileSync(config.get<string>('refreshTokenPublicKeyPath'), { encoding: 'utf8' });
+
+export const signAccessToken = (payload: Record<string, unknown>, options?: SignOptions) => {
+  return jwt.sign(payload, accessTokenPrivateKey, {
     ...(options && options),
-    algorithm: 'HS256',
+    algorithm: 'RS256',
   });
 };
 
-export const verifyJWT = (token: string, keyName: 'ACCESS_TOKEN' | 'REFRESH_TOKEN', options?: SignOptions) => {
-  const key = process.env[keyName] || process.env['ACCESS_TOKEN'];
-  if (!key) return;
-  const decode = jwt.verify(token, key, {
+export const signRefreshToken = (payload: Record<string, unknown>, options?: SignOptions) => {
+  return jwt.sign(payload, refreshTokenPrivateKey, {
     ...(options && options),
+    algorithm: 'RS256',
   });
-  return decode;
+};
+
+export const verifyAccessToken = (token: string, options?: SignOptions) => {
+  return jwt.verify(token, accessTokenPublicKey, {
+    ...(options && options),
+    algorithms: ['RS256'],
+  });
+};
+
+export const verifyRefreshToken = (token: string, options?: SignOptions) => {
+  return jwt.verify(token, refreshTokenPublicKey, {
+    ...(options && options),
+    algorithms: ['RS256'],
+  });
 };

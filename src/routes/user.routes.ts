@@ -5,6 +5,6 @@ const router = express.Router();
 const userCtl = new UserControllers();
 
 router.get('/me', userCtl.getMeHandler);
-router.get('/verify', userCtl.verifyUser);
+// router.get('/verify', userCtl.verifyUser);
 
 export default router;

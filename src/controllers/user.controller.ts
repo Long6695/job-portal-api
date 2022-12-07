@@ -21,28 +21,28 @@ export class UserControllers {
     }
   }
 
-  async verifyUser(req: Request, res: Response, next: NextFunction) {
-    try {
-      passport.authenticate('jwt', async (err, user) => {
-        if (err || !user) {
-          return next(err);
-        }
-        const updatedUser = await findUniqueAndUpdateUser(
-          { email: user.email },
-          {
-            verify: true,
-          },
-        );
-        res.status(201).json({
-          status: 'success',
-          message: 'Update user successfully!',
-          data: {
-            user: omit(updatedUser, excludedFields),
-          },
-        });
-      })(req, res, next);
-    } catch (error) {
-      next(error);
-    }
-  }
+//   async verifyUser(req: Request, res: Response, next: NextFunction) {
+//     try {
+//       passport.authenticate('jwt', async (err, user) => {
+//         if (err || !user) {
+//           return next(err);
+//         }
+//         const updatedUser = await findUniqueAndUpdateUser(
+//           { email: user.email },
+//           {
+//             verify: true,
+//           },
+//         );
+//         res.status(201).json({
+//           status: 'success',
+//           message: 'Update user successfully!',
+//           data: {
+//             user: omit(updatedUser, excludedFields),
+//           },
+//         });
+//       })(req, res, next);
+//     } catch (error) {
+//       next(error);
+//     }
+//   }
 }

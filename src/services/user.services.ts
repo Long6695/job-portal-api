@@ -2,7 +2,7 @@ import { Prisma, PrismaClient, User } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const excludedFields = ['password', 'passwordConfirm'];
+export const excludedFields = ['password', 'verified', 'verificationCode'];
 
 export const createUser = async (input: Prisma.UserCreateInput) => {
   return (await prisma.user.create({ data: input })) as User;
@@ -13,5 +13,5 @@ export const findUniqueUser = async (where: Prisma.UserWhereUniqueInput, select?
 };
 
 export const findUniqueAndUpdateUser = async (where: Prisma.UserWhereUniqueInput, data: Prisma.UserUpdateInput) => {
-  return await prisma.user.update({ where, data });
+  return (await prisma.user.update({ where, data })) as User;
 };

@@ -1,12 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import app from './app';
-
+import dotenv from 'dotenv';
+dotenv.config();
+import config from 'config';
 const prisma = new PrismaClient();
-const PORT = process.env.PORT;
 
 async function bootstrap() {
-  app.listen(PORT, () => {
-    console.log(`Server is running on Port ${PORT}`);
+  app.listen(config.get<number>('port'), () => {
+    console.log(`Server is running on Port ${config.get<number>('port')}`);
   });
 }
 
