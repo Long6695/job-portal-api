@@ -10,7 +10,7 @@ const connectRedis = async () => {
   try {
     await redisClient.connect();
     console.log('Redis client connect successfully');
-    redisClient.set('test', 'Connect Redis successfully');
+    await redisClient.set('test', 'Connect Redis successfully');
   } catch (error) {
     console.log(error);
     setTimeout(connectRedis, 5000);

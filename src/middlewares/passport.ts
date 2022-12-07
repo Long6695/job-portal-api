@@ -4,6 +4,8 @@ import { createUser, findUniqueUser } from 'services/user.services';
 import bcrypt from 'bcryptjs';
 import passportJwt from 'passport-jwt';
 import { accessTokenPublicKey } from 'utils/jwt';
+import crypto from 'crypto';
+import redisClient from 'utils/connectRedis';
 
 const jwtStrategy = passportJwt.Strategy;
 const extractJwt = passportJwt.ExtractJwt;
@@ -15,10 +17,14 @@ passport.use(
     {
       secretOrKey: accessTokenPublicKey,
       jwtFromRequest: extractJwt.fromAuthHeaderAsBearerToken(),
-      algorithms: ["RS256"]
+      algorithms: ['RS256'],
     },
     async (payload, done) => {
       try {
+        const session = await redisClient.get(`${payload.email}`);
+        if (!session) {
+          return done(null, false);
+        }
         const user = await findUniqueUser({ email: payload.email });
         if (!user) {
           return done(null, false);
@@ -41,7 +47,10 @@ passport.use(
     async (email, password, done) => {
       try {
         const hashedPassword = await bcrypt.hash(password, 12);
-        const user = await createUser({ email: email.toLowerCase(), password: hashedPassword });
+        const verifyCode = crypto.randomBytes(32).toString('hex');
+        const verificationCode = crypto.createHash('sha256').update(verifyCode).digest('hex');
+        const user = await createUser({ email: email.toLowerCase(), password: hashedPassword, verificationCode });
+
         return done(null, user);
       } catch (error) {
         done(error);

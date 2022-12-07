@@ -12,6 +12,10 @@ export const findUniqueUser = async (where: Prisma.UserWhereUniqueInput, select?
   return (await prisma.user.findUnique({ where, select })) as User;
 };
 
-export const findUniqueAndUpdateUser = async (where: Prisma.UserWhereUniqueInput, data: Prisma.UserUpdateInput) => {
-  return (await prisma.user.update({ where, data })) as User;
+export const findUniqueAndUpdateUser = async (
+  where: Prisma.UserWhereUniqueInput,
+  data: Prisma.UserUpdateInput,
+  select?: Prisma.UserSelect,
+) => {
+  return (await prisma.user.update({ where, data, select })) as User;
 };

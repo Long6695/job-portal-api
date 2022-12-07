@@ -2,12 +2,12 @@ import { CookieOptions, NextFunction, Request, Response } from 'express';
 import { omit } from 'lodash';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import AppError from 'utils/AppError';
-import { excludedFields, findUniqueUser } from 'services/user.services';
+import { excludedFields, findUniqueAndUpdateUser, findUniqueUser } from 'services/user.services';
 import passport from 'passport';
-import { User } from '@prisma/client';
-import { CreateUserInput, LoginUserInput } from 'schemas/user.schemas';
+import { RegisterUserInput, LoginUserInput, VerifyEmailInput } from 'schemas/user.schemas';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from 'utils/jwt';
 import config from 'config';
+import redisClient from 'utils/connectRedis';
 
 export class AuthController {
   constructor() {
@@ -36,7 +36,7 @@ export class AuthController {
   }
 
   async registerUserHandler(
-    req: Request<Record<string, unknown>, Record<string, unknown>, CreateUserInput>,
+    req: Request<Record<string, unknown>, Record<string, unknown>, RegisterUserInput>,
     res: Response,
     next: NextFunction,
   ) {
@@ -89,6 +89,10 @@ export class AuthController {
               expiresIn: `${config.get<number>('refreshTokenExpiresIn')}m`,
             },
           );
+
+          await redisClient.set(`${email}`, refresh_token, {
+            EX: config.get<number>('redisCacheExpiresIn') * 60,
+          });
 
           res.cookie('access_token', access_token, this.cookiesOptions(config.get<number>('accessTokenExpiresIn')));
           res.cookie('refresh_token', refresh_token, this.cookiesOptions(config.get<number>('refreshTokenExpiresIn')));
@@ -144,6 +148,10 @@ export class AuthController {
         },
       );
 
+      await redisClient.set(`${decoded.email}`, new_refresh_token, {
+        EX: config.get<number>('redisCacheExpiresIn') * 60,
+      });
+
       // 4. Add Cookies
       res.cookie('access_token', access_token, this.cookiesOptions(config.get<number>('accessTokenExpiresIn')));
 
@@ -165,13 +173,52 @@ export class AuthController {
 
   async logoutUserHandler(req: Request, res: Response, next: NextFunction) {
     try {
-      this.logout(res);
+      passport.authenticate('jwt', async (err, user) => {
+        if (err || !user) return next(err);
+        const session = await redisClient.get(`${user.email}`);
+        if (!session) {
+          return res.status(401).json({
+            status: 'error',
+            message: 'Unauthenticated',
+          });
+        }
+        await redisClient.del(`${user.email}`);
+        this.logout(res);
+        res.status(200).json({
+          status: 'success',
+          message: 'Logout',
+        });
+      })(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async verifyEmailHandler(req: Request<VerifyEmailInput>, res: Response, next: NextFunction) {
+    try {
+      const verificationCode = req.params.verificationCode;
+
+      const user = await findUniqueAndUpdateUser(
+        { verificationCode },
+        { verify: true, verificationCode: null },
+        { email: true },
+      );
+
+      if (!user) {
+        return next(new AppError(401, 'Could not verify email'));
+      }
 
       res.status(200).json({
         status: 'success',
-        message: 'Logout',
+        message: 'Email verified successfully',
       });
-    } catch (err) {
+    } catch (err: any) {
+      if (err.code === 'P2025') {
+        return res.status(403).json({
+          status: 'fail',
+          message: `Verification code is invalid or user doesn't exist`,
+        });
+      }
       next(err);
     }
   }
