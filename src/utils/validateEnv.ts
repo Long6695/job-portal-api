@@ -15,6 +15,7 @@ const validateEnv = () => {
     REFRESH_TOKEN_PUBLIC_KEY_PATH: str(),
     FRONTEND_BASE_URL: str(),
     DATABASE_URL: str(),
+    SENDGRID_API_KEY: str(),
   });
 };
 

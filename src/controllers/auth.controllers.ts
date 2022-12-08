@@ -1,13 +1,13 @@
 import { CookieOptions, NextFunction, Request, Response } from 'express';
-import { omit } from 'lodash';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import AppError from 'utils/AppError';
-import { excludedFields, findUniqueAndUpdateUser, findUniqueUser } from 'services/user.services';
+import { findUniqueAndUpdateUser, findUniqueUser } from 'services/user.services';
 import passport from 'passport';
 import { RegisterUserInput, LoginUserInput, VerifyEmailInput } from 'schemas/user.schemas';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from 'utils/jwt';
 import config from 'config';
 import redisClient from 'utils/connectRedis';
+import sendMail from 'utils/sendgrid';
 
 export class AuthController {
   constructor() {
@@ -50,11 +50,16 @@ export class AuthController {
             });
           }
         }
+        try {
+          const url = `${config.get<string>('origin')}/api/v1/auth/verify/${user.verificationCode}`;
+          await sendMail(user.email, "Verify your account!", url);
+        } catch (error) {
+          return next(error);
+        }
+
         return res.status(200).json({
           status: 'success',
-          data: {
-            user: omit(user, excludedFields),
-          },
+          message: 'Register successfully!'
         });
       })(req, res, next);
     } catch (error) {
