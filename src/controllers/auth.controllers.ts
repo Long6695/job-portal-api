@@ -51,7 +51,7 @@ export class AuthController {
           }
         }
         try {
-          const url = `${config.get<string>('origin')}/api/v1/auth/verify/${user.verificationCode}`;
+          const url = `${config.get<string>('frontendBaseUrl')}/api/v1/auth/verify/${user.verificationCode}`;
           await sendMail(user.email, "Verify your account!", url);
         } catch (error) {
           return next(error);
