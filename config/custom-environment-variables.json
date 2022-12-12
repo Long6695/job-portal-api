@@ -6,5 +6,7 @@
   "accessTokenPublicKeyPath": "ACCESS_TOKEN_PUBLIC_KEY_PATH",
   "refreshTokenPrivateKeyPath": "REFRESH_TOKEN_PRIVATE_KEY_PATH",
   "refreshTokenPublicKeyPath": "REFRESH_TOKEN_PUBLIC_KEY_PATH",
-  "sendgridApiKey": "SENDGRID_API_KEY"
+  "sendgridApiKey": "SENDGRID_API_KEY",
+  "sendgridVerifyEmailKey": "SENDGRID_VERIFY_EMAIL_KEY",
+  "sendgridResetPasswordKey": "SENDGRID_RESET_PASSWORD_KEY"
 }

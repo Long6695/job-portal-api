@@ -8,6 +8,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from 'utils/jwt
 import config from 'config';
 import redisClient from 'utils/connectRedis';
 import sendMail from 'utils/sendgrid';
+import crypto from 'crypto';
 
 export class AuthController {
   constructor() {
@@ -51,15 +52,16 @@ export class AuthController {
           }
         }
         try {
-          const url = `${config.get<string>('frontendBaseUrl')}/api/v1/auth/verify/${user.verificationCode}`;
-          await sendMail(user.email, "Verify your account!", url);
+          const url = `${config.get<string>('origin')}/api/v1/auth/verify/${user.verificationCode}`;
+          const templateVerifyEmailId = config.get<string>('sendgridVerifyEmailKey');
+          await sendMail(user.email, 'Verify your account!', url, templateVerifyEmailId);
         } catch (error) {
           return next(error);
         }
 
         return res.status(200).json({
           status: 'success',
-          message: 'Register successfully!'
+          message: 'Please go your email to verify account!',
         });
       })(req, res, next);
     } catch (error) {
@@ -112,7 +114,6 @@ export class AuthController {
       next(new AppError(401, 'Login fail. Try again!'));
     }
   }
-  // async verifyUser(req: Request, res: Response, next: NextFunction) {}
 
   async refreshAccessTokenHandler(req: Request, res: Response, next: NextFunction) {
     try {
@@ -225,6 +226,47 @@ export class AuthController {
         });
       }
       next(err);
+    }
+  }
+
+  async sendResetPasswordHandler(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body;
+      const verifyCode = crypto.randomBytes(32).toString('hex');
+      const resetPasswordCode = crypto.createHash('sha256').update(verifyCode).digest('hex');
+      const url = `${config.get<string>('origin')}/api/v1/auth/reset-password/${resetPasswordCode}`;
+      const templateResetPassId = config.get<string>('sendgridResetPasswordKey');
+      await sendMail(email, 'Reset Password!', url, templateResetPassId);
+    } catch (error) {
+      return next(error);
+    }
+  }
+  async resetPasswordHandler(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { resetPasswordCode } = req.params;
+
+      const user = await findUniqueUser({ resetPasswordCode });
+      if (!user) {
+        return res.status(400).json({
+          status: 'fail',
+          message: 'User not found',
+        });
+      }
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Please set your new password',
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          return res.status(400).json({
+            status: 'fail',
+            message: `User doesn't exist`,
+          });
+        }
+      }
+      next(error);
     }
   }
 }

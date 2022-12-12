@@ -16,6 +16,8 @@ const validateEnv = () => {
     FRONTEND_BASE_URL: str(),
     DATABASE_URL: str(),
     SENDGRID_API_KEY: str(),
+    SENDGRID_VERIFY_EMAIL_KEY: str(),
+    SENDGRID_RESET_PASSWORD_KEY: str(),
   });
 };
 

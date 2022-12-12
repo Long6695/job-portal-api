@@ -16,13 +16,14 @@ model User {
   password  String
   verify    Boolean   @default(false)
   verificationCode String? @db.Text @unique
+  resetPasswordCode String? @db.Text @unique
   role      Role      @default(USER)
   profile   Profile?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@unique([email, verificationCode])
-  @@index([email, verificationCode])
+  @@unique([email, verificationCode, resetPasswordCode])
+  @@index([email, verificationCode, resetPasswordCode])
 }
 
 model Profile {

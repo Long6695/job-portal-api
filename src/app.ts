@@ -1,6 +1,6 @@
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import express, {NextFunction, Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import redisClient from 'utils/connectRedis';
@@ -20,7 +20,7 @@ app.use(
   cors({
     origin: [config.get<string>('origin')],
     credentials: true,
-  })
+  }),
 );
 if (config.get<string>('nodeEnv') === 'development') app.use(morgan('dev'));
 
@@ -40,11 +40,14 @@ app.all('*', (req: Request, res: Response, next: NextFunction) => {
 });
 
 // // GLOBAL ERROR HANDLER
-app.use((err: any, req: Request, res: Response) => {
-  res.status(err.status || 500);
-  res.json({ error: err });
+app.use((err: AppError, req: Request, res: Response) => {
+  const statusCode = err.statusCode;
+  const status = err.status;
+  const message = err.message;
+  res.status(statusCode).json({
+    status,
+    message,
+  });
 });
-
-
 
 export default app;

@@ -42,6 +42,19 @@ export const verifyEmailSchema = object({
   }),
 });
 
+export const resetPassword = object({
+  params: object({
+    resetPasswordCode: string(),
+  })
+});
+
+export const sendResetPassword = object({
+  body: object({
+    email: string()
+  })
+});
+
+
 export const updateUserSchema = object({
   body: object({
     name: string({}),
