@@ -1,9 +1,8 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import { validate } from '../middlewares/validate';
 import { AuthController } from '../controllers/auth.controllers';
 import passport from 'passport';
 import { createUserSchema, loginUserSchema, resetPassword, sendResetPassword, updateUserSchema, verifyEmailSchema } from 'schemas/user.schemas';
-import AppError from 'utils/AppError';
 
 const router = express.Router();
 const authCtl = new AuthController();

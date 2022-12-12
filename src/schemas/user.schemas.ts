@@ -45,19 +45,17 @@ export const verifyEmailSchema = object({
 export const resetPassword = object({
   params: object({
     resetPasswordCode: string(),
-  })
+  }),
 });
 
 export const sendResetPassword = object({
   body: object({
-    email: string()
-  })
+    email: string(),
+  }),
 });
-
 
 export const updateUserSchema = object({
   body: object({
-    name: string({}),
     email: string({}).email('Invalid email address'),
     password: string({})
       .min(8, 'Password must be more than 8 characters')
@@ -72,10 +70,7 @@ export const updateUserSchema = object({
     }),
 });
 
-export type RegisterUserInput = Omit<
-  TypeOf<typeof createUserSchema>['body'],
-  'passwordConfirm'
->;
+export type RegisterUserInput = Omit<TypeOf<typeof createUserSchema>['body'], 'passwordConfirm'>;
 
 export type LoginUserInput = TypeOf<typeof loginUserSchema>['body'];
 export type VerifyEmailInput = TypeOf<typeof verifyEmailSchema>['params'];

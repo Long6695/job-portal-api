@@ -19,5 +19,4 @@ export class UserControllers {
       next(err);
     }
   }
-
 }

@@ -52,7 +52,7 @@ export class AuthController {
           }
         }
         try {
-          const url = `${config.get<string>('origin')}/api/v1/auth/verify/${user.verificationCode}`;
+          const url = `${config.get<string>('FRONTEND_BASE_URL')}/api/v1/auth/verify/${user.verificationCode}`;
           const templateVerifyEmailId = config.get<string>('sendgridVerifyEmailKey');
           await sendMail(user.email, 'Verify your account!', url, templateVerifyEmailId);
         } catch (error) {
@@ -83,19 +83,9 @@ export class AuthController {
         req.login(user, { session: false }, async (err) => {
           if (err) return next(err);
 
-          const access_token = signAccessToken(
-            { email },
-            {
-              expiresIn: `${config.get<number>('accessTokenExpiresIn')}m`,
-            },
-          );
+          const access_token = signAccessToken({ email });
 
-          const refresh_token = signRefreshToken(
-            { email },
-            {
-              expiresIn: `${config.get<number>('refreshTokenExpiresIn')}m`,
-            },
-          );
+          const refresh_token = signRefreshToken({ email });
 
           await redisClient.set(`${email}`, refresh_token, {
             EX: config.get<number>('redisCacheExpiresIn') * 60,
@@ -140,19 +130,9 @@ export class AuthController {
       }
 
       // Sign new access token
-      const access_token = signAccessToken(
-        { email: decoded.email },
-        {
-          expiresIn: `${config.get<number>('accessTokenExpiresIn')}m`,
-        },
-      );
+      const access_token = signAccessToken({ email: decoded.email });
 
-      const new_refresh_token = signRefreshToken(
-        { email: decoded.email },
-        {
-          expiresIn: `${config.get<number>('refreshTokenExpiresIn')}m`,
-        },
-      );
+      const new_refresh_token = signRefreshToken({ email: decoded.email });
 
       await redisClient.set(`${decoded.email}`, new_refresh_token, {
         EX: config.get<number>('redisCacheExpiresIn') * 60,
@@ -234,7 +214,7 @@ export class AuthController {
       const { email } = req.body;
       const verifyCode = crypto.randomBytes(32).toString('hex');
       const resetPasswordCode = crypto.createHash('sha256').update(verifyCode).digest('hex');
-      const url = `${config.get<string>('origin')}/api/v1/auth/reset-password/${resetPasswordCode}`;
+      const url = `${config.get<string>('FRONTEND_BASE_URL')}/api/v1/auth/reset-password/${resetPasswordCode}`;
       const templateResetPassId = config.get<string>('sendgridResetPasswordKey');
       await sendMail(email, 'Reset Password!', url, templateResetPassId);
     } catch (error) {

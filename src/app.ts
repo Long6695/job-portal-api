@@ -18,7 +18,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: [config.get<string>('origin')],
+    origin: [config.get<string>('FRONTEND_BASE_URL')],
     credentials: true,
   }),
 );
